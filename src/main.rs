@@ -1,21 +1,20 @@
-use uuid::Uuid;
 use actix_files as fs;
 use actix_files::NamedFile;
 use actix_web::http::header::{ContentDisposition, DispositionType};
-use actix_web::{get, post, web, Error, App, HttpRequest, HttpResponse, HttpServer, Responder, http::header};
-use std::sync::Mutex;
+use actix_web::{
+    get, http::header, post, web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder,
+};
 use sqlite::State;
-
+use std::sync::Mutex;
+use uuid::Uuid;
 
 extern crate tera;
-use tera::{Result, Context, Tera};
+use tera::{Context, Result, Tera};
 
 use serde::Serialize;
 
 #[macro_use]
 extern crate lazy_static;
-
-
 
 struct AppStateWithCounter {
     aX: Mutex<i32>,
@@ -24,25 +23,44 @@ struct AppStateWithCounter {
 }
 
 async fn index(data: web::Data<AppStateWithCounter>) -> String {
-    let mut aX = data.aX.lock().unwrap(); 
-    let mut aY = data.aY.lock().unwrap(); 
-    let mut aZ = data.aZ.lock().unwrap(); 
+    let mut aX = data.aX.lock().unwrap();
+    let mut aY = data.aY.lock().unwrap();
+    let mut aZ = data.aZ.lock().unwrap();
 
-    format!("Pos now: {aX}-{aY}-{aZ}") 
-
+    format!("Pos now: {aX}-{aY}-{aZ}")
 }
 
 async fn addX(data: web::Data<AppStateWithCounter>) -> String {
-    let mut aX = data.aX.lock().unwrap(); 
-    let mut aY = data.aY.lock().unwrap(); 
-    let mut aZ = data.aZ.lock().unwrap(); 
+    let mut aX = data.aX.lock().unwrap();
+    let mut aY = data.aY.lock().unwrap();
+    let mut aZ = data.aZ.lock().unwrap();
 
     *aX += 10;
 
-    format!("Pos now: {aX}-{aY}-{aZ}") 
+    format!("Pos now: {aX}-{aY}-{aZ}")
 }
 
-#[get("/check")] 
+async fn addY(data: web::Data<AppStateWithCounter>) -> String {
+    let mut aX = data.aX.lock().unwrap();
+    let mut aY = data.aY.lock().unwrap();
+    let mut aZ = data.aZ.lock().unwrap();
+
+    *aY += 10;
+
+    format!("Pos now: {aX}-{aY}-{aZ}")
+}
+
+async fn addZ(data: web::Data<AppStateWithCounter>) -> String {
+    let mut aX = data.aX.lock().unwrap();
+    let mut aY = data.aY.lock().unwrap();
+    let mut aZ = data.aZ.lock().unwrap();
+
+    *aZ += 10;
+
+    format!("Pos now: {aX}-{aY}-{aZ}")
+}
+
+#[get("/check")]
 async fn check(date: web::Header<header::Date>) -> String {
     println!("-{}-", date.to_string());
     format!("Request was sent at {}", date.to_string())
@@ -58,9 +76,9 @@ async fn handler(req: HttpRequest, data: web::Data<AppStateWithCounter>) -> impl
     let axis = getAxis(&req);
     let value = getValue(&req);
 
-    let mut aX = data.aX.lock().unwrap(); 
-    let mut aY = data.aY.lock().unwrap(); 
-    let mut aZ = data.aZ.lock().unwrap(); 
+    let mut aX = data.aX.lock().unwrap();
+    let mut aY = data.aY.lock().unwrap();
+    let mut aZ = data.aZ.lock().unwrap();
 
     // println!("{}", key.is_some().to_string());
     // println!("{}", axis.is_some().to_string());
@@ -68,7 +86,6 @@ async fn handler(req: HttpRequest, data: web::Data<AppStateWithCounter>) -> impl
 
     if key.is_some() || axis.is_some() || value.is_some() {
         if key.unwrap() == "10sg323Pt4s353sd353G" {
-
             let intValue = value.unwrap().parse::<i32>().unwrap();
 
             if axis.unwrap() == "1" {
@@ -82,15 +99,23 @@ async fn handler(req: HttpRequest, data: web::Data<AppStateWithCounter>) -> impl
             }
 
             let connection = sqlite::open("resps.db").unwrap();
-            let query = format!("INSERT INTO resps (axis, value) VALUES ({}, {});", axis.unwrap(), value.unwrap());
+            let query = format!(
+                "INSERT INTO resps (axis, value) VALUES ({}, {});",
+                axis.unwrap(),
+                value.unwrap()
+            );
             connection.execute(query).unwrap();
 
-            return format!("Right key | axis: {}; | value: {};", axis.unwrap(), value.unwrap())
+            return format!(
+                "Right key | axis: {}; | value: {};",
+                axis.unwrap(),
+                value.unwrap()
+            );
         } else {
             return "Access denied".to_owned();
         }
     }
-    return format!("Pos now: {aX}-{aY}-{aZ}") 
+    return format!("Pos now: {aX}-{aY}-{aZ}");
 }
 
 fn getKey<'a>(req: &'a HttpRequest) -> Option<&'a str> {
@@ -106,10 +131,9 @@ fn getValue<'a>(req: &'a HttpRequest) -> Option<&'a str> {
 }
 
 async fn template(req: HttpRequest, data: web::Data<AppStateWithCounter>) -> impl Responder {
-
-    let mut aX = data.aX.lock().unwrap(); 
-    let mut aY = data.aY.lock().unwrap(); 
-    let mut aZ = data.aZ.lock().unwrap(); 
+    let mut aX = data.aX.lock().unwrap();
+    let mut aY = data.aY.lock().unwrap();
+    let mut aZ = data.aZ.lock().unwrap();
 
     let tera = Tera::new("templates/**/*").unwrap();
     let mut context = Context::new();
@@ -136,7 +160,6 @@ async fn template(req: HttpRequest, data: web::Data<AppStateWithCounter>) -> imp
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-
     let aXaYaZ = web::Data::new(AppStateWithCounter {
         aX: Mutex::new(0),
         aY: Mutex::new(0),
@@ -150,11 +173,12 @@ async fn main() -> std::io::Result<()> {
             .app_data(aXaYaZ.clone())
             .service(check)
             // .service(fs::Files::new("/reporting", "./static").index_file("index.html"))
-            .route("/add", web::get().to(addX))
+            .route("/addX", web::get().to(addX))
+            .route("/addY", web::get().to(addY))
+            .route("/addZ", web::get().to(addZ))
             .route("/handler", web::to(handler))
-            .route("/", web::get().to(index))
+            .route("/", web::get().to(index))   
             .route("/template", web::get().to(template))
-            
     })
     .bind("127.0.0.1:8080")?
     .run()

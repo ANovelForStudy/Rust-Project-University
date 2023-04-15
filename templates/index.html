@@ -4,19 +4,58 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
     <title>{{ title }}</title>
 </head>
 <body>
     <h1>{{ message }}</h1></br>
-    <h3>X: {{aX}}</h3>
-    <h3>Y: {{aY}}</h3>
-    <h3>Z: {{aZ}}</h3>
-    
-    <canvas id="rustCanvas">
 
-        
-    </canvas>
-    
-    <script src="./static/static/js/main.js"></script>
+    <h3 id="x-rotate-value" value="{{ aX }}">{{ aX }}</h3>
+    <h3 id="y-rotate-value" value="{{ aY }}">{{ aY }}</h3>
+    <h3 id="z-rotate-value" value="{{ aZ }}">{{ aZ }}</h3>
+
+    <div id="canvas"></div>
+    <script>
+        const scene = new THREE.Scene();
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 6;
+
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas').appendChild(renderer.domElement);
+
+        const geometry = new THREE.BoxGeometry(3, 3, 3);
+        const material = new THREE.MeshNormalMaterial({color: 0xcca0ee});
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+
+        function rotateCube() {
+            const xValue = Number(document.getElementById("x-rotate-value").textContent);
+            const yValue = Number(document.getElementById("y-rotate-value").textContent);
+            const zValue = Number(document.getElementById("z-rotate-value").textContent);
+            cube.rotation.x = THREE.Math.degToRad(xValue);
+            cube.rotation.y = THREE.Math.degToRad(yValue);
+            cube.rotation.z = THREE.Math.degToRad(zValue);
+        }
+
+        function updateRotation() {
+            rotateCube();
+            renderer.render(scene, camera);
+        }
+
+        document.querySelectorAll("h3").forEach(el => {
+            el.addEventListener("change", updateRotation);
+        });
+
+        function animate() {
+            rotateCube();
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+    </script>
 </body>
 </html>
